@@ -16,6 +16,7 @@ import (
 type KSQLAPI interface {
 	Query(ctx context.Context, statement string) (*RowResult, error)
 	CreateStream(ctx context.Context, statement string, streamProperties map[string]string) (*CreateStreamResult, error)
+	Exec(ctx context.Context, statement string, streamProperties map[string]string) error
 	Describe(ctx context.Context, statement string, streamProperties map[string]string) (*DescribeResult, error)
 }
 
@@ -23,7 +24,7 @@ var (
 	StreamPropertiesOffsetEarliest = map[string]string{"ksql.streams.auto.offset.reset": "earliest"}
 	pathQuery                      = "/query"
 	pathExec                       = "/ksql"
-	QueryWithNoResults = errors.New("query with no results")
+	QueryWithNoResults             = errors.New("query with no results")
 )
 
 type QueryRequest struct {
@@ -58,10 +59,10 @@ type CreateStreamResult struct {
 }
 
 type DescribeResult struct {
-	StatementText string `json:"statementText"`
+	StatementText     string `json:"statementText"`
 	SourceDescription struct {
-		Name          string `json:"name"`
-		WriteQueries  struct {
+		Name         string `json:"name"`
+		WriteQueries []struct {
 			Id string `json:"id"`
 		} `json:"writeQueries"`
 		Type        string `json:"type"`
@@ -186,6 +187,24 @@ func (k ksqlAPI) CreateStream(ctx context.Context, statement string, streamPrope
 		return &streamResult, nil
 	}
 	return nil, QueryWithNoResults
+}
+
+func (k ksqlAPI) Exec(ctx context.Context, statement string, streamProperties map[string]string) error {
+	path := fmt.Sprintf("%s%s", k.host, pathExec)
+	if statement == "" {
+		return errors.New("empty statement")
+	}
+
+	execRequest := ExecRequest{KSQL: statement, StreamProperties: streamProperties}
+	marshal, err := json.Marshal(execRequest)
+	if err != nil {
+		return err
+	}
+	_, err = k.postToAPI(path, marshal)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (k ksqlAPI) Describe(ctx context.Context, statement string, streamProperties map[string]string) (*DescribeResult, error) {

@@ -8,12 +8,22 @@ import (
 func main() {
 	ksqlapi, err := NewKSQLAPI("http://192.168.27.136:8088")
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		return
 	}
-	query, err := ksqlapi.Query(context.Background(), "select filename from  migrationtestagg where filename='first.sql';")
+	creator := NewMigrationStructureCreator(ksqlapi)
+	exists, err := creator.MigrationTableExists(context.Background())
 	if err != nil {
 		fmt.Println(err)
-		return 
+		return
 	}
-	fmt.Println(query.Row.Columns[0])
+	if !exists {
+		err := creator.Create(context.Background())
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		return
+	}
+	fmt.Println("already exists!")
 }
