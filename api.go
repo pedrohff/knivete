@@ -130,7 +130,6 @@ func (k ksqlAPI) Query(ctx context.Context, statement string) (*RowResult, error
 		return nil, err
 	}
 
-	// TODO this might break
 	for _, rowResult := range result {
 		if rowResult.ErrorMessage != nil {
 			return nil, errors.New(*rowResult.ErrorMessage)
