@@ -107,7 +107,7 @@ func migrate(c *cli.Context) {
 			continue
 		}
 		fmt.Printf("\tapplying on ksql server\n")
-		err = migrator.Apply(context.Background(), file.Name(), string(readFile))
+		err = migrator.Apply(context.Background(), string(readFile))
 		if err != nil {
 			fmt.Printf("error applying file %s : %v\n", file.Name(), err)
 			continue
