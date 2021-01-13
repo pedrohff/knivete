@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"strings"
 )
 
@@ -24,6 +25,10 @@ type migrationStructureCreator struct {
 }
 
 func (m migrationStructureCreator) MigrationTableExists(ctx context.Context) (bool, error) {
+	if isDryRun(ctx) {
+		fmt.Printf("[dry-run] skipping migration structure check\n")
+		return true, nil
+	}
 	_, err := m.api.Describe(ctx, "describe applied_migrations;", nil)
 	if err != nil {
 		if strings.Contains(strings.ToUpper(err.Error()), strings.ToUpper("Could not find STREAM/TABLE 'APPLIED_MIGRATIONS' in the Metastore")) {

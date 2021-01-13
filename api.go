@@ -199,6 +199,11 @@ func (k ksqlAPI) Exec(ctx context.Context, statement string, streamProperties ma
 	if err != nil {
 		return err
 	}
+
+	if isDryRun(ctx) {
+		fmt.Printf("[dry-run] %s\n", string(marshal))
+		return nil
+	}
 	_, err = k.postToAPI(path, marshal)
 	if err != nil {
 		return err

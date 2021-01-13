@@ -36,6 +36,9 @@ func commands() []cli.Command {
 					Usage: "--server=http://localhost:8088",
 					// Value:    "http://192.168.27.136:8088",
 					Required: true,
+				}, cli.BoolFlag{
+					Name:  "dry-run",
+					Usage: "--dry-run",
 				},
 			},
 			Action: migrate,
@@ -44,6 +47,12 @@ func commands() []cli.Command {
 }
 
 func migrate(c *cli.Context) {
+	ctx := context.Background()
+
+	if c.Bool("dry-run") {
+		ctx = context.WithValue(ctx, "dry-run", true)
+	}
+
 	init := time.Now()
 	host := c.String("server")
 	ksqlapi, err := NewKSQLAPI(host)
@@ -52,13 +61,13 @@ func migrate(c *cli.Context) {
 		return
 	}
 	creator := NewMigrationStructureCreator(ksqlapi)
-	migrationTableExists, err := creator.MigrationTableExists(context.Background())
+	migrationTableExists, err := creator.MigrationTableExists(ctx)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 	if !migrationTableExists {
-		err := creator.Create(context.Background())
+		err := creator.Create(ctx)
 		if err != nil {
 			fmt.Println(err)
 			return
@@ -97,7 +106,7 @@ func migrate(c *cli.Context) {
 		}
 
 		fmt.Printf("\tchecking if already applied\n")
-		applied, err := migrator.FileIsApplied(context.Background(), file.Name())
+		applied, err := migrator.FileIsApplied(ctx, file.Name())
 		if err != nil {
 			fmt.Println(err)
 			return
@@ -107,14 +116,15 @@ func migrate(c *cli.Context) {
 			continue
 		}
 		fmt.Printf("\tapplying on ksql server\n")
-		err = migrator.Apply(context.Background(), string(readFile))
+
+		err = migrator.Apply(ctx, string(readFile))
 		if err != nil {
 			fmt.Printf("error applying file %s : %v\n", file.Name(), err)
 			continue
 		}
 
 		fmt.Printf("\tmarking migration as applied\n")
-		err = migrator.InsertToAppliedMigrations(context.Background(), file.Name())
+		err = migrator.InsertToAppliedMigrations(ctx, file.Name())
 		if err != nil {
 			fmt.Println(err)
 			return
