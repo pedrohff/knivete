@@ -46,7 +46,7 @@ func commands() []cli.Command {
 	}
 }
 
-func migrate(c *cli.Context) {
+func migrate(c *cli.Context) error {
 	ctx := context.Background()
 
 	if c.Bool("dry-run") {
@@ -58,33 +58,33 @@ func migrate(c *cli.Context) {
 	ksqlapi, err := NewKSQLAPI(host)
 	if err != nil {
 		fmt.Println(err)
-		return
+		return err
 	}
 	creator := NewMigrationStructureCreator(ksqlapi)
 	migrationTableExists, err := creator.MigrationTableExists(ctx)
 	if err != nil {
 		fmt.Println(err)
-		return
+		return err
 	}
 	if !migrationTableExists {
 		err := creator.Create(ctx)
 		if err != nil {
 			fmt.Println(err)
-			return
+			return err
 		}
-		return
+		return err
 	}
 	migrator := NewMigrator(ksqlapi)
 	dirName := c.String("directory")
 	var dirInfo os.FileInfo
 	if dirInfo, err = os.Stat(dirName); os.IsNotExist(err) {
 		fmt.Println("does not exist")
-		return
+		return err
 	}
 
 	if !dirInfo.IsDir() {
 		fmt.Printf("%s is not a directory\n", dirName)
-		return
+		return err
 	}
 	if string(dirName[len(dirName)-1]) != "/" {
 		dirName += "/"
@@ -93,7 +93,7 @@ func migrate(c *cli.Context) {
 	files, err := ioutil.ReadDir(dirName)
 	if err != nil {
 		fmt.Println(err)
-		return
+		return err
 	}
 	migrationsApplied := 0
 	for _, file := range files {
@@ -102,14 +102,14 @@ func migrate(c *cli.Context) {
 		readFile, err := ioutil.ReadFile(dirName + file.Name())
 		if err != nil {
 			fmt.Println(err)
-			return
+			return err
 		}
 
 		fmt.Printf("\tchecking if already applied\n")
 		applied, err := migrator.FileIsApplied(ctx, file.Name())
 		if err != nil {
 			fmt.Println(err)
-			return
+			return err
 		}
 		if applied {
 			fmt.Printf("file already applied\n\n")
@@ -127,10 +127,11 @@ func migrate(c *cli.Context) {
 		err = migrator.InsertToAppliedMigrations(ctx, file.Name())
 		if err != nil {
 			fmt.Println(err)
-			return
+			return err
 		}
 		fmt.Println()
 		migrationsApplied++
 	}
 	fmt.Printf("applied %d migrations in %d ms\n", migrationsApplied, time.Since(init).Milliseconds())
+	return nil
 }
