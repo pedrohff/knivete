@@ -58,33 +58,33 @@ func migrate(c *cli.Context) error {
 	ksqlapi, err := NewKSQLAPI(host)
 	if err != nil {
 		fmt.Println(err)
-		return err
+		return cli.NewExitError(err, 1)
 	}
 	creator := NewMigrationStructureCreator(ksqlapi)
 	migrationTableExists, err := creator.MigrationTableExists(ctx)
 	if err != nil {
 		fmt.Println(err)
-		return err
+		return cli.NewExitError(err, 1)
 	}
 	if !migrationTableExists {
 		err := creator.Create(ctx)
 		if err != nil {
 			fmt.Println(err)
-			return err
+			return cli.NewExitError(err, 1)
 		}
-		return err
+		return cli.NewExitError(err, 1)
 	}
 	migrator := NewMigrator(ksqlapi)
 	dirName := c.String("directory")
 	var dirInfo os.FileInfo
 	if dirInfo, err = os.Stat(dirName); os.IsNotExist(err) {
 		fmt.Println("does not exist")
-		return err
+		return cli.NewExitError(err, 1)
 	}
 
 	if !dirInfo.IsDir() {
 		fmt.Printf("%s is not a directory\n", dirName)
-		return err
+		return cli.NewExitError(err, 1)
 	}
 	if string(dirName[len(dirName)-1]) != "/" {
 		dirName += "/"
@@ -93,7 +93,7 @@ func migrate(c *cli.Context) error {
 	files, err := ioutil.ReadDir(dirName)
 	if err != nil {
 		fmt.Println(err)
-		return err
+		return cli.NewExitError(err, 1)
 	}
 	migrationsApplied := 0
 	for _, file := range files {
@@ -102,14 +102,14 @@ func migrate(c *cli.Context) error {
 		readFile, err := ioutil.ReadFile(dirName + file.Name())
 		if err != nil {
 			fmt.Println(err)
-			return err
+			return cli.NewExitError(err, 1)
 		}
 
 		fmt.Printf("\tchecking if already applied\n")
 		applied, err := migrator.FileIsApplied(ctx, file.Name())
 		if err != nil {
 			fmt.Println(err)
-			return err
+			return cli.NewExitError(err, 1)
 		}
 		if applied {
 			fmt.Printf("file already applied\n\n")
@@ -127,7 +127,7 @@ func migrate(c *cli.Context) error {
 		err = migrator.InsertToAppliedMigrations(ctx, file.Name())
 		if err != nil {
 			fmt.Println(err)
-			return err
+			return cli.NewExitError(err, 1)
 		}
 		fmt.Println()
 		migrationsApplied++
