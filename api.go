@@ -33,7 +33,7 @@ type QueryRequest struct {
 
 type ExecRequest struct {
 	KSQL             string            `json:"ksql"`
-	StreamProperties map[string]string `json:"streamProperties"`
+	StreamProperties map[string]string `json:"streamsProperties"`
 }
 
 type ResultStatus string
