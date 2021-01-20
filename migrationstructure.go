@@ -45,11 +45,12 @@ func (m migrationStructureCreator) Create(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	time.Sleep(5 * time.Second)
+	duration := 30 * time.Second
+	time.Sleep(duration)
 	_, err = m.api.CreateStream(ctx, createAggregationTableSql, nil)
 	if err != nil {
 		return err
 	}
-	time.Sleep(5 * time.Second)
+	time.Sleep(duration)
 	return nil
 }
