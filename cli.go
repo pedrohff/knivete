@@ -74,6 +74,7 @@ func migrate(c *cli.Context) error {
 		}
 		return cli.NewExitError(err, 1)
 	}
+
 	migrator := NewMigrator(ksqlapi)
 	dirName := c.String("directory")
 	var dirInfo os.FileInfo
@@ -109,7 +110,7 @@ func migrate(c *cli.Context) error {
 		applied, err := migrator.FileIsApplied(ctx, file.Name())
 		if err != nil {
 			fmt.Println(err)
-			return cli.NewExitError(err, 1)
+			continue
 		}
 		if applied {
 			fmt.Printf("file already applied\n\n")

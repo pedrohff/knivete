@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 )
 
 const (
@@ -44,9 +45,11 @@ func (m migrationStructureCreator) Create(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	time.Sleep(5 * time.Second)
 	_, err = m.api.CreateStream(ctx, createAggregationTableSql, nil)
 	if err != nil {
 		return err
 	}
+	time.Sleep(5 * time.Second)
 	return nil
 }
